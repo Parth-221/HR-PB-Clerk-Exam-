@@ -43,18 +43,16 @@
             display: flex;
             gap: 15px;
             align-items: center;
-            flex-wrap: wrap;
         }
 
-        select, input[type="password"] {
+        select {
             padding: 6px 12px;
             font-weight: bold;
             border: 1px solid var(--border-slate);
             border-radius: 4px;
             background-color: white;
+            max-width: 350px;
         }
-        select { max-width: 350px; }
-        .api-input { flex-grow: 1; max-width: 300px; font-family: monospace; font-size: 0.85rem; }
 
         .main-workspace-frame {
             display: grid;
@@ -125,7 +123,13 @@
         .score-output-card { background: white; border: 2px solid #cbd5e1; padding: 15px; border-radius: 4px; margin-bottom: 15px; }
         .metric-block { margin-top: 12px; padding-top: 8px; border-top: 1px dashed #cbd5e1; }
         .metric-title { font-weight: bold; color: var(--cbt-navy); display: flex; justify-content: space-between; }
-        .metric-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed #e2e8f0; font-size: 0.85rem; }
+        
+        /* 1-10 Scale Design Styling */
+        .scale-container { display: flex; justify-content: space-between; margin: 10px 0; background: #f1f5f9; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; }
+        .scale-node { flex: 1; text-align: center; padding: 6px 0; font-weight: bold; font-size: 0.9rem; color: #64748b; border-right: 1px solid #e2e8f0; }
+        .scale-node:last-child { border-right: none; }
+        .scale-active { background: var(--cbt-navy); color: white; border-radius: 4px; }
+        .scale-labels { display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: bold; color: #475569; padding: 0 5px; }
     </style>
 </head>
 <body>
@@ -142,19 +146,15 @@
         <div>
             <label style="font-weight: bold; font-size: 0.85rem; color: var(--cbt-navy);">1. Block Selection: </label>
             <select id="section-selector" onchange="loadDropdownOptions()">
-                <option value="essay">Subjective Block A: Essay Writing [10 Marks]</option>
-                <option value="letter">Subjective Block B: Letter Writing [5 Marks]</option>
-                <option value="precis">Subjective Block C: Précis Drafting [5 Marks]</option>
-                <option value="translation">Subjective Block D: Hindi to English Translation [10 Marks]</option>
+                <option value="essay">Subjective Block A: Essay Writing</option>
+                <option value="letter">Subjective Block B: Letter Writing</option>
+                <option value="precis">Subjective Block C: Précis Drafting</option>
+                <option value="translation">Subjective Block D: Hindi to English Translation</option>
             </select>
         </div>
         <div>
             <label style="font-weight: bold; font-size: 0.85rem; color: var(--cbt-navy);">2. Select Target Prompt: </label>
             <select id="question-selector" onchange="renderActiveQuestionUI()"></select>
-        </div>
-        <div style="display: flex; align-items: center; gap: 5px; margin-left: auto;">
-            <label style="font-weight: bold; font-size: 0.85rem; color: #dc2626;">🔑 Server Access Token: </label>
-            <input type="password" id="api-key-field" class="api-input" placeholder="Enter evaluation token..." oninput="saveKeyLocally()">
         </div>
     </div>
 
@@ -162,7 +162,7 @@
         <div class="monitor-panel">
             <div class="panel-heading">
                 <span>OFFICIAL QUESTION SYSTEM MONITOR</span>
-                <span id="score-allocation-badge">10 Marks</span>
+                <span>Subjective Evaluation</span>
             </div>
             <div class="panel-body-scroller" id="question-display-view"></div>
         </div>
@@ -194,86 +194,10 @@
 
 <script>
     const masterExamDB = {
-        essay: Array.from({length: 15}, (_, i) => ({
-            title: `Choice ${i+1}: Essay Prompt Target ${i+1}`,
-            prompt: `Write an Essay on the following topic in about 150-200 words:\n\n"${[
-                "Judicial Reforms and Case Pendency Solution Frameworks in Subordinate Courts",
-                "The Problem of Ground Water Depletion and Agricultural Viability in Punjab & Haryana",
-                "Artificial Intelligence and its Impact on Employment Dynamics in India",
-                "The Role of Cyber Security Laws in Digital Governance",
-                "Stubble Burning: Challenges, Environmental Impacts, and Technological Fixes",
-                "E-Courts Initiatives: Changing the Landscape of Indian Legal Architecture",
-                "Socio-Economic Ramifications of Drug Menace in Border States and Rehabilitation Strategies",
-                "Women Empowerment and Financial Inclusion through Self-Help Groups (SHGs)",
-                "The Impact of Social Media Ecosystems on Democratic Public Discourse",
-                "Sustainable Urban Development Challenges in Smart City Frameworks",
-                "New Education Policy (NEP): Transforming Higher Education Landscapes",
-                "Climate Change Realities and Extreme Weather Readiness in Northern Plains",
-                "The Role of Sports Infrastructure in Boosting Youth Potential in Rural Districts",
-                "Tourism Potential and Heritage Conservation in Historical Landmarks",
-                "The Importance of Alternative Dispute Resolution (ADR) Mechanisms"
-            ][i]}"`
-        })),
-        letter: Array.from({length: 15}, (_, i) => ({
-            title: `Choice ${i+1}: Administrative Letter Scenario ${i+1}`,
-            prompt: `Draft a formal letter regarding the following administrative matter:\n\n"${[
-                "Requesting the Deputy Commissioner to authorize setting up an integrated community waste plant and upgrading public sanitation.",
-                "Requesting the Chief Medical Officer to resolve vaccine storage facility shortages at the local primary health center.",
-                "Addressing the District Sessions Judge regarding urgent infrastructure maintenance required in subordinate court bar rooms.",
-                "Requesting the Municipal Commissioner to install modern street lighting along unsafe residential bypass loops.",
-                "Urging the Superintendent of Police to increase police presence and night patrols due to recent local thefts.",
-                "Requesting the Bank Manager to trace and reverse an unauthorized online transaction on an institutional account.",
-                "Addressing the Regional Transport Authority regarding unregulated private bus operators exploiting local commuters.",
-                "Requesting the State Electricity Board to replace malfunctioning transformers causing power cuts in peak summer.",
-                "Urging the Environmental Protection Board to investigate illegal chemical dumping in local irrigation canals.",
-                "Addressing the Public Works Department to repair a severely damaged road corridor before the monsoon season.",
-                "Requesting the District Education Officer to upgrade computer laboratory systems in rural high schools.",
-                "Writing to the Editor of a newspaper to highlight the rise of scam calls targeting senior citizens.",
-                "Addressing the Postal Superintendent regarding persistent delays in delivering court notifications.",
-                "Requesting the Civil Supplies Officer to investigate arbitrary distribution metrics at food distribution centers.",
-                "Urging the Sports Authority Director to upgrade public gym and athletics infrastructure in rural blocks."
-            ][i]}"`
-        })),
-        precis: Array.from({length: 15}, (_, i) => ({
-            title: `Choice ${i+1}: Précis Selection Passage ${i+1}`,
-            prompt: `Draft a Précis for the text block below. Compress the content cleanly to approximately one-third of its length and add a title:\n\n"${[
-                "The complex operations of a constitutional democracy rely heavily on maintaining strict boundaries through a system of checks and balances. No single organ—whether the Executive, the Legislature, or the Judiciary—can exercise unrestricted power without risking overreach. Each branch is carefully designed to operate within its defined sphere while maintaining the ability to review and check the actions of the others.",
-                "Modern agricultural systems face significant challenges due to rising global temperatures and unpredictable rainfall patterns. Relying too heavily on intensive chemical fertilizers and water-heavy irrigation networks has degraded soil quality and depleted groundwater reserves. To protect food security, farming systems must adopt sustainable practices.",
-                "The shift toward cloud computing has created new security vulnerabilities across global corporate networks. Sophisticated malicious actors frequently exploit outdated firewall rules and weak user authentication systems to gain unauthorized access to proprietary corporate databases, making zero-trust architectures essential.",
-                "Administrative law has expanded significantly to regulate the wide-ranging powers of modern government agencies. As public departments gain more authority over commercial licenses and social welfare distribution, the risk of arbitrary decisions increases. Administrative tribunals help manage this by reviewing bureaucratic actions.",
-                "Unregulated migration from rural villages to urban industrial centers creates major infrastructure challenges for municipal governments. Arriving populations often face a shortage of affordable housing, leading to the growth of informal settlements that lack clean drinking water, electricity, and basic sanitation.",
-                "Transitioning power grids to renewable energy sources like wind and solar requires significant updates to transmission infrastructure. Unlike traditional fossil fuel power plants, renewable energy generation is intermittent and depends heavily on changing weather patterns, making smart grids critical.",
-                "Investing in public healthcare networks provides long-term economic benefits by building a healthier, more productive workforce. Preventive healthcare programs, like regular diagnostic checkups and widespread vaccination campaigns, significantly reduce the financial burden on tertiary hospitals.",
-                "The rise of decentralized digital currencies presents unique challenges for central banking systems and monetary regulation. Because these digital assets operate outside traditional cross-border clearing houses, they make it harder for regulatory authorities to track illicit financial flows.",
-                "The power of judicial review under Article 226 allows High Courts to protect fundamental rights and oversee administrative decisions. This authority ensures that lower courts and public tribunals stay within their legal bounds and follow natural justice.",
-                "Managing groundwater depletion requires strict local regulation alongside community-led water conservation projects. Unregulated borehole drilling for farming has caused a steep decline in water tables across northern plains, making rainwater harvesting vital.",
-                "Developing artificial intelligence tools requires careful ethical oversight to prevent biased data from reinforcing systemic discrimination. If training datasets contain historical human biases, automated algorithms can perpetuate unfair outcomes in hiring.",
-                "Microfinance initiatives empower rural women by providing small loans without requiring traditional collateral. These small credit lines allow women to start small enterprises like tailoring shops or dairy units, helping them achieve financial independence.",
-                "E-commerce logistics rely on advanced predictive data analytics to optimize inventory distribution across regional fulfillment hubs. By analyzing local buying trends, algorithms position high-demand items closer to target areas before purchases are made.",
-                "Bridging the skills gap between university curricula and changing corporate job requirements is essential to reduce educated youth unemployment. Traditional academic structures often focus too much on theoretical concepts, leaving graduates without practical training.",
-                "Climate change presents immediate challenges for coastal cities due to rising sea levels and intense storm surges. Outdated flood infrastructure often fails during heavy storms, meaning cities must invest in natural storm barriers like mangroves."
-            ][i]}"`
-        })),
-        translation: Array.from({length: 15}, (_, i) => ({
-            title: `Choice ${i+1}: Translation Exercise ${i+1}`,
-            prompt: `Translate the given Hindi passage accurately into standard grammatical English text:\n\n"${[
-                "न्यायपालिका समाज का एक अत्यंत महत्वपूर्ण अंग है। लोगों का अदालतों पर अटूट विश्वास होता है। यदि अदालतों में मामलों के निपटारे में अत्यधिक देरी होगी, तो इस विश्वास को ठेस पहुंच सकती है। इसलिए त्वरित न्याय प्रदान करना समय की मांग है।",
-                "ग्रामीण क्षेत्रों में डिजिटल साक्षरता का प्रसार अत्यंत आवश्यक है। जब तक हमारे गांवों के युवा कंप्यूटर और इंटरनेट का सही उपयोग नहीं सीखेंगे, तब तक वे आधुनिक नौकरियों के लिए पात्र नहीं बन पाएंगे। सरकार को इस दिशा में ठोस कदम उठाने चाहिए।",
-                "कानून के समक्ष सभी नागरिक समान हैं और किसी भी व्यक्ति को उसके धर्म या जाति के आधार पर विशेषाधिकार नहीं दिए जा सकते। हमारा संविधान प्रत्येक व्यक्ति को व्यक्तिगत स्वतंत्रता और सुरक्षा की गारंटी देता है, जिसका सम्मान होना चाहिए।",
-                "तकनीकी प्रगति ने अदालती कामकाज को बहुत सुगम और पारदर्शी बना दिया है। डिजिटल माध्यमों से मामलों की फाइलिंग और ऑनलाइन सुनवाई से न केवल समय की बचत हो रही है बल्कि आम जनता को न्याय प्राप्त करने में भी आसानी हो रही है।",
-                "नागरिकों के कर्तव्य उनके अधिकारों जितने ही महत्वपूर्ण होते हैं। सार्वजनिक संपत्ति की रक्षा करना और समाज में शांति बनाए रखना प्रत्येक व्यक्ति की जिम्मेदारी है। इन दायित्वों का पालन किए बिना एक आदर्श समाज का निर्माण असंभव है।",
-                "पर्यावरण का संरक्षण केवल सरकार का काम नहीं है, बल्कि यह हम सभी का सामूहिक कर्तव्य है। वृक्षों की अवैध कटाई और नदियों में प्रदूषण फैलाना कानूनन अपराध है। हमें अपनी आने वाली पीढ़ियों के लिए प्राकृतिक संसाधनों को बचाना होगा।",
-                "कल्याणकारी योजनाओं का लाभ समाज के अंतिम व्यक्ति तक पहुंचना सुनिश्चित करना प्रशासनिक तंत्र की मुख्य जिम्मेदारी है। भ्रष्टाचार को समाप्त करने के लिए प्रत्यक्ष लाभ हस्तांतरण जैसी प्रणालियों ने बहुत महत्वपूर्ण भूमिका निभाई है।",
-                "वित्तीय अनुशासन और सतर्कता ऑनलाइन धोखाधड़ी से बचने के सर्वोत्तम उपाय हैं। बैंकों को अपने ग्राहकों को सुरक्षित लेनदेन विधियों के बारे में लगातार जागरूक करना चाहिए। किसी भी अनजान व्यक्ति के साथ अपनी व्यक्तिगत बैंकिंग जानकारी साझा न करें।",
-                "साइबर अपराधों की बढ़ती संख्या वर्तमान समय में एक बड़ी चुनौती बन चुकी है। इंटरनेट का सुरक्षित उपयोग और मजबूत पासवर्ड का चयन हमें ऑनलाइन खतरों से सुरक्षित रख सकता है। इसके लिए कड़े कानूनी नियमों का क्रियान्वयन आवश्यक है।",
-                "शिक्षा का अधिकार कानून प्रत्येक बच्चे को बुनियादी शिक्षा प्राप्त करने का अवसर देता है। ग्रामीण और पिछड़े क्षेत्रों में स्कूलों की स्थिति में सुधार करना और शिक्षकों की उपस्थिति सुनिश्चित करना इस कानून की सफलता के लिए अनिवार्य है।",
-                "लोक अदालतें विवादों के त्वरित और सौहार्दपूर्ण निपटारे का एक उत्कृष्ट माध्यम हैं। इनमें दोनों पक्षों की आपसी सहमति से मामलों को सुलषाया जाता है, जिससे अदालतों का बोझ कम होता है और गरीब लोगों का धन और समय बचता है।",
-                "सतत कृषि और जल संरक्षण दोनों एक-दूसरे से जुड़े हुए हैं। फसलों के विविधीकरण को अपनाकर और ड्रिप सिंचाई प्रणाली का उपयोग करके हम गिरते भूजल स्तर को रोक सकते हैं, जिससे हमारी कृषि का भविष्य सुरक्षित होगा।",
-                "शहरी क्षेत्रों में बढ़ती जनसंख्या के कारण बुनियादी ढांचे पर दबाव लगातार बढ़ता जा रहा है जिसे संभालना एक चुनौती है। सुचारू यातायात प्रणाली, स्वच्छ पेयजल और उचित जल निकासी की व्यवस्था करना नगर निगमों के लिए एक बड़ी प्रशासनिक चुनौती बन गया है।",
-                "लोकतंत्र में मीडिया की जवाबदेही अत्यंत महत्वपूर्ण है क्योंकि इसे लोकतंत्र का चौथा स्तंभ माना जाता है। मीडिया को बिना किसी पूर्वाग्रह के निष्पक्ष समाचार प्रसारित करने चाहिए ताकि जनता को देश की वास्तविक स्थिति की जानकारी मिल सके।",
-                "युवाओं को केवल डिग्री प्रदान करने के बजाय उन्हें रोजगारोन्मुखी कौशल सिखाना अधिक आवश्यक है। व्यावसायिक प्रशिक्षण और तकनीकी शिक्षा के माध्यम से हम देश में बेरोजगारी की समस्या को प्रभावी ढंग से समाप्त कर सकते हैं।"
-            ][i]}"`
-        }))
+        essay: [{title: "Choice 1: Essay Prompt Target 1", prompt: "Write an Essay on the following topic in about 150-200 words:\n\n\"Judicial Reforms and Case Pendency Solution Frameworks in Subordinate Courts\""}],
+        letter: [{title: "Choice 1: Administrative Letter 1", prompt: "Draft a formal letter regarding the following administrative matter:\n\n\"Addressing the District Sessions Judge regarding urgent infrastructure maintenance required in subordinate court bar rooms.\""}],
+        precis: [{title: "Choice 1: Précis Selection 1", prompt: "Draft a Précis for the text block below. Compress the content cleanly to approximately one-third of its length and add a title:\n\n\"The complex operations of a constitutional democracy rely heavily on maintaining strict boundaries through a system of checks and balances. No single organ—whether the Executive, the Legislature, or the Judiciary—can exercise unrestricted power without risking overreach.\""}],
+        translation: [{title: "Choice 1: Translation Exercise 1", prompt: "Translate the given Hindi passage accurately into standard grammatical English text:\n\n\"न्यायपालिका समाज का एक अत्यंत महत्वपूर्ण अंग है। लोगों का अदालतों पर अटूट विश्वास होता है। यदि अदालतों में मामलों के निपटारे में अत्यधिक देरी होगी, तो इस विश्वास को ठेस पहुंच सकती है।\""}]
     };
 
     let timeSecs = 2700; 
@@ -313,15 +237,12 @@
         const sec = document.getElementById("section-selector").value;
         const idx = document.getElementById("question-selector").value;
         const data = masterExamDB[sec][idx];
-        document.getElementById("score-allocation-badge").innerText = (sec === "essay" || sec === "translation" ? "10" : "5") + " Marks";
         document.getElementById("typing-terminal").value = "";
         document.getElementById("live-word-metric").innerText = "Words: 0";
         document.getElementById("ai-evaluation-pane").style.display = "none";
         document.getElementById("question-display-view").innerHTML = `
             <div class="prompt-highlight">${data.prompt}</div>
-            <div class="instructions-alert">
-                <b>⚖️ Evaluation Parameters:</b> Answers are scrutinized closely for content relatability, formatting structure, and syntax precision. 
-            </div>
+            <div class="instructions-alert"><b>⚖️ Evaluation Metric:</b> Evaluated on a scale of 1 to 10 (1 = Bad, 10 = Good).</div>
         `;
     }
 
@@ -331,64 +252,84 @@
         document.getElementById("live-word-metric").innerText = "Words: " + (txt === "" ? 0 : txt.split(/\s+/).length);
     }
 
-    function saveKeyLocally() { localStorage.setItem("clerk_api_key", document.getElementById("api-key-field").value.trim()); }
-
     async function submitToAIBrainForGrading() {
-        const apiKey = document.getElementById("api-key-field").value.trim();
-        if (!apiKey) { alert("Please input your master engine connection token first."); return; }
+        // 🔴 PASTE YOUR MASTER GEMINI API KEY CODE STRING DIRECTLY BELOW HERE:
+        const REAL_API_KEY = "AQ.Ab8RN6KXuNVF4y_vLviflq_YQbOchnKBEqaQh2JLz3qObFz43w";
+
+        if (!REAL_API_KEY || REAL_API_KEY.includes("PASTE_YOUR")) { 
+            alert("Developer Setup Error: Remember to replace the placeholder on line 218 with your real Gemini API Key!"); 
+            return; 
+        }
 
         const sec = document.getElementById("section-selector").value;
         const idx = document.getElementById("question-selector").value;
         const promptText = masterExamDB[sec][idx].prompt;
         const userText = document.getElementById("typing-terminal").value.trim();
 
-        if(!userText) { alert("Please provide text inside the live editor console before submitting."); return; }
+        if(!userText) { alert("Please type your answer inside the input editor panel first."); return; }
 
         document.getElementById("ai-evaluation-pane").style.display = "block";
         document.getElementById("ai-loading-message").style.display = "block";
         document.getElementById("ai-response-content").style.display = "none";
         document.getElementById("submit-btn").disabled = true;
 
-        const maxM = (sec === "essay" || sec === "translation" ? "10" : "5");
+        const evaluationSystemPrompt = `You are an official examiner for the Court Clerk Examination.
+Evaluate the user's answer answer context: "${promptText}".
+Analyze the response strictly across three core metrics and award a score integer from 1 to 10 (where 1 is Bad and 10 is Good).
 
-        const evaluationSystemPrompt = `You are an expert official examiner for the High Court Subordinate Court Clerk Recruitment Examination. 
-Evaluate the user's descriptive answer response strictly based on the following assignment topic criteria: "${promptText}".
-
-You must provide a highly critical and rigorous assessment. Do not award high marks unless the writing is exceptional.
-Provide your assessment structured exactly within the following visual HTML format layout block:
+Return your evaluation EXACTLY in this HTML output format framework:
 <div class="score-output-card">
-    <h2>🎯 Overall Score: [Compute Exact Score] / ${maxM} Marks</h2>
+    <h2>📊 Candidate Scoreboard Evaluation</h2>
     
     <div class="metric-block">
-        <div class="metric-title"><span>Relatability & Relevancy Index</span></div>
-        <p>[Analyze how deeply and accurately the student focused on the true logic of the topic question. If they wrote generic filler text or strayed completely off-topic, give a critical evaluation and score this parameter heavily down.]</p>
+        <div class="metric-title"><span>Relatability & Accuracy Score</span></div>
+        <div class="scale-container">
+            <div class="scale-node [Add class 'scale-active' only to the node matching your awarded score integer. Leave others empty]">1</div>
+            <div class="scale-node [Add class 'scale-active' if 2]">2</div>
+            <div class="scale-node [Add class 'scale-active' if 3]">3</div>
+            <div class="scale-node [Add class 'scale-active' if 4]">4</div>
+            <div class="scale-node [Add class 'scale-active' if 5]">5</div>
+            <div class="scale-node [Add class 'scale-active' if 6]">6</div>
+            <div class="scale-node [Add class 'scale-active' if 7]">7</div>
+            <div class="scale-node [Add class 'scale-active' if 8]">8</div>
+            <div class="scale-node [Add class 'scale-active' if 9]">9</div>
+            <div class="scale-node [Add class 'scale-active' if 10]">10</div>
+        </div>
+        <div class="scale-labels"><span>Bad (1)</span><span>Average (5)</span><span>Good (10)</span></div>
+        <p style="margin-top:5px; font-size:0.9rem; color:#475569;">[Critique accuracy here]</p>
     </div>
+
     <div class="metric-block">
-        <div class="metric-title"><span>Structural Framework Layout</span></div>
-        <p>[Analyze the structural layout. For letters, confirm if proper administrative alignments or subject headers exist. For essays, verify paragraph divisions. For précis, verify title headings.]</p>
+        <div class="metric-title"><span>Structural Layout Format Score</span></div>
+        <div class="scale-container">
+            <div class="scale-node [Add class 'scale-active' if 1]">1</div>
+            <div class="scale-node [Add class 'scale-active' if 2]">2</div>
+            <div class="scale-node [Add class 'scale-active' if 3]">3</div>
+            <div class="scale-node [Add class 'scale-active' if 4]">4</div>
+            <div class="scale-node [Add class 'scale-active' if 5]">5</div>
+            <div class="scale-node [Add class 'scale-active' if 6]">6</div>
+            <div class="scale-node [Add class 'scale-active' if 7]">7</div>
+            <div class="scale-node [Add class 'scale-active' if 8]">8</div>
+            <div class="scale-node [Add class 'scale-active' if 9]">9</div>
+            <div class="scale-node [Add class 'scale-active' if 10]">10</div>
+        </div>
+        <div class="scale-labels"><span>Bad (1)</span><span>Average (5)</span><span>Good (10)</span></div>
+        <p style="margin-top:5px; font-size:0.9rem; color:#475569;">[Critique layout structure here]</p>
     </div>
-    <div class="metric-block">
-        <div class="metric-title"><span>Linguistic & Syntactic Precision</span></div>
-        <p>[Point out grammatical mistakes, spelling bugs, awkward vocabulary, or tense errors. Offer critical suggestions for sentence restructuring.]</p>
-    </div>
-</div>
-<h3>✨ Exemplary Reference Baseline Answer:</h3>
-<p>[Provide a professional, beautifully written candidate-level response template matching this specific choice context to guide their improvement]</p>`;
+</div>`;
 
         try {
-            const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+            // Using the new generation Gemini 3.5 Flash model channel endpoint
+            const url = `https://generativelanguage.googleapis.com/v1/models/gemini-3.5-flash:generateContent?key=${REAL_API_KEY}`;
             const response = await fetch(url, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    contents: [{ parts: [{ text: `${evaluationSystemPrompt}\n\nCandidate's Written Response For Assessment:\n"${userText}"` }] }]
+                    contents: [{ parts: [{ text: `${evaluationSystemPrompt}\n\nCandidate's Answer:\n"${userText}"` }] }]
                 })
             });
 
-            if(!response.ok) {
-                const errData = await response.json();
-                throw new Error(errData.error?.message || "Cloud connection limit exceptions encountered.");
-            }
+            if(!response.ok) throw new Error("Server response bottleneck encountered.");
 
             const result = await response.json();
             const aiTextResponse = result.candidates[0].content.parts[0].text;
@@ -402,21 +343,14 @@ Provide your assessment structured exactly within the following visual HTML form
         } catch (error) {
             document.getElementById("ai-loading-message").style.display = "none";
             const contentArea = document.getElementById("ai-response-content");
-            contentArea.innerHTML = `<div style="color:var(--alert-red); font-weight:bold; padding:15px; border:1px solid var(--alert-red); background:#fef2f2; border-radius:4px;">
-                ⚠️ Connection Failure: ${error.message}<br><br>
-                Ensure your platform connection token is valid and active.
-            </div>`;
+            contentArea.innerHTML = `<div style="color:var(--alert-red); font-weight:bold; padding:15px;">⚠️ Connection error occurred. Please try submitting again.</div>`;
             contentArea.style.display = "block";
         } finally {
             document.getElementById("submit-btn").disabled = false;
         }
     }
 
-    window.onload = function() {
-        const savedKey = localStorage.getItem("clerk_api_key");
-        if(savedKey) { document.getElementById("api-key-field").value = savedKey; }
-        loadDropdownOptions();
-    };
+    window.onload = loadDropdownOptions;
 </script>
 </body>
 </html>
